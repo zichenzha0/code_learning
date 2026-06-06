@@ -1,22 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { usePyodide } from './usePyodide.js'
-import { useProgress } from './useProgress.js'
-import { CHAPTERS } from './lessons.js'
-import LessonMap from './components/LessonMap.jsx'
-import GameScreen from './components/GameScreen.jsx'
-import KnowledgeBook from './components/KnowledgeBook.jsx'
-import DailyDrill from './components/DailyDrill.jsx'
+import { usePyodide }   from './usePyodide.js'
+import { useProgress }  from './useProgress.js'
+import { useAudio }     from './useAudio.js'
+import { CHAPTERS }     from './lessons.js'
+import HomeScreen       from './components/HomeScreen.jsx'
+import CampaignSelect   from './components/CampaignSelect.jsx'
+import GameScreen       from './components/GameScreen.jsx'
+import KnowledgeBook    from './components/KnowledgeBook.jsx'
+import DailyDrill       from './components/DailyDrill.jsx'
 
-// ── TopBar ──────────────────────────────────────────────────────
-function TopBar({ rank, progress, MAX_HP, onOpenBook, onDailyDrill }) {
-  const musouPct = Math.min(100, Math.round(progress.musou))
-  const todayPct = Math.min(100, Math.round((progress.todayMerit / (progress.dailyGoal || 30)) * 100))
-  const dailyDone = progress.todayMerit >= (progress.dailyGoal || 30)
-  const streak = progress.streak?.count ?? 0
-  const freezes = progress.streak?.freezes ?? 0
+// ── Persistent top bar (shown on select / mission / book / drill) ─────────────
+function TopBar({ rank, progress, MAX_HP, muted, toggleMute, onHome }) {
+  const musouPct   = Math.min(100, Math.round(progress.musou))
+  const todayPct   = Math.min(100, Math.round((progress.todayMerit / (progress.dailyGoal || 30)) * 100))
+  const dailyDone  = progress.todayMerit >= (progress.dailyGoal || 30)
+  const streak     = progress.streak?.count ?? 0
 
   return (
     <div className="topbar">
+      <button className="topbar-home-btn" onClick={onHome} title="返回主页">⚔</button>
       <div className="topbar-rank">
         <span className="topbar-rank-label">军衔</span>
         <span className="topbar-rank-name">{rank.name}</span>
@@ -24,7 +26,6 @@ function TopBar({ rank, progress, MAX_HP, onOpenBook, onDailyDrill }) {
       <div className="topbar-merit">
         <span className="topbar-icon">⚔</span>
         <span className="topbar-val">{progress.merit}</span>
-        <span className="topbar-sub">战功</span>
       </div>
       <div className="topbar-hp">
         {Array.from({ length: MAX_HP }, (_, i) => (
@@ -40,29 +41,27 @@ function TopBar({ rank, progress, MAX_HP, onOpenBook, onDailyDrill }) {
         </div>
       </div>
       {streak > 0 && (
-        <div className="topbar-streak" title={`连战 ${streak} 天${freezes > 0 ? `，${freezes} 面免战旗` : ''}`}>
-          🔥{streak}
-          {freezes > 0 && <span className="topbar-freeze">🏳×{freezes}</span>}
-        </div>
+        <div className="topbar-streak">🔥{streak}</div>
       )}
       {/* Daily goal mini ring */}
-      <div className="topbar-daily" title={`今日战功 ${progress.todayMerit}/${progress.dailyGoal}`}>
-        <svg viewBox="0 0 28 28" width="28" height="28" className="topbar-daily-ring">
-          <circle cx="14" cy="14" r="11" fill="none" stroke="rgba(199,160,74,0.2)" strokeWidth="3" />
+      <div className="topbar-daily" title={`今日 ${progress.todayMerit}/${progress.dailyGoal} 战功`}>
+        <svg viewBox="0 0 28 28" width="24" height="24" className="topbar-daily-ring">
+          <circle cx="14" cy="14" r="11" fill="none" stroke="rgba(176,37,42,0.2)" strokeWidth="3" />
           <circle cx="14" cy="14" r="11" fill="none"
-            stroke={dailyDone ? '#C7A04A' : '#B0252A'} strokeWidth="3"
+            stroke={dailyDone ? '#B0252A' : '#C7A04A'} strokeWidth="3"
             strokeDasharray={`${todayPct * 0.691} 69.1`}
             strokeDashoffset="17.3" strokeLinecap="round"
             style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }} />
         </svg>
         <span className="topbar-daily-label">{dailyDone ? '✓' : `${todayPct}%`}</span>
       </div>
-      <button className="topbar-book-btn" onClick={onOpenBook}>📖</button>
+      <button className="topbar-audio-btn" onClick={toggleMute} title={muted ? '开音乐' : '静音'}>
+        {muted ? '🔇' : '🎵'}
+      </button>
     </div>
   )
 }
 
-// ── Musou Banner ────────────────────────────────────────────────
 function MusouBanner() {
   return (
     <div className="musou-banner" aria-live="assertive">
@@ -74,7 +73,6 @@ function MusouBanner() {
   )
 }
 
-// ── Daily Goal Banner ───────────────────────────────────────────
 function DailyGoalBanner() {
   return (
     <div className="daily-goal-banner" aria-live="assertive">
@@ -86,32 +84,35 @@ function DailyGoalBanner() {
   )
 }
 
-// ── Main App ────────────────────────────────────────────────────
+// ── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const { status, run } = usePyodide()
-  const { progress, rank, completeStep, awardCorrect, penalizeWrong, reset, getWeakTopics, getSkillLevel, MAX_HP } = useProgress()
+  const { status, run }      = usePyodide()
+  const { progress, rank, completeStep, awardCorrect, penalizeWrong, awardStar,
+          reset, getWeakTopics, getSkillLevel, MAX_HP } = useProgress()
+  const { muted, toggleMute, playBgm, unlock } = useAudio()
 
-  const [view, setView] = useState('map')   // 'map' | 'game' | 'book' | 'drill'
+  const [view, setView]                   = useState('home')
   const [activeChapterId, setActiveChapterId] = useState(null)
-  const [showMusouBanner, setShowMusouBanner] = useState(false)
-  const [showDailyBanner, setShowDailyBanner] = useState(false)
-  const prevTriggerRef = useRef(progress.musouTrigger)
+  const [showMusouBanner, setMusouBanner] = useState(false)
+  const [showDailyBanner, setDailyBanner] = useState(false)
+
+  const prevMusouTrigger = useRef(progress.musouTrigger)
   const prevDailyTrigger = useRef(progress.dailyGoalHitTrigger)
 
   useEffect(() => {
-    if (progress.musouTrigger > prevTriggerRef.current) {
-      setShowMusouBanner(true)
-      const t = setTimeout(() => setShowMusouBanner(false), 2500)
-      prevTriggerRef.current = progress.musouTrigger
+    if (progress.musouTrigger > prevMusouTrigger.current) {
+      setMusouBanner(true)
+      const t = setTimeout(() => setMusouBanner(false), 2500)
+      prevMusouTrigger.current = progress.musouTrigger
       return () => clearTimeout(t)
     }
-    prevTriggerRef.current = progress.musouTrigger
+    prevMusouTrigger.current = progress.musouTrigger
   }, [progress.musouTrigger])
 
   useEffect(() => {
     if (progress.dailyGoalHitTrigger > prevDailyTrigger.current) {
-      setShowDailyBanner(true)
-      const t = setTimeout(() => setShowDailyBanner(false), 2500)
+      setDailyBanner(true)
+      const t = setTimeout(() => setDailyBanner(false), 2500)
       prevDailyTrigger.current = progress.dailyGoalHitTrigger
       return () => clearTimeout(t)
     }
@@ -120,48 +121,86 @@ export default function App() {
 
   const chapter = CHAPTERS.find(c => c.id === activeChapterId) ?? null
 
-  function openChapter(ch) {
-    setActiveChapterId(ch.id)
-    setView('game')
+  function goHome() {
+    playBgm('home')
+    setView('home')
   }
+
+  function handleStart() {
+    unlock()           // satisfy browser autoplay policy
+    playBgm('home')
+    setView('select')
+  }
+
+  function handlePlay(ch) {
+    setActiveChapterId(ch.id)
+    playBgm(ch.id)
+    setView('mission')
+  }
+
+  function handleSessionEnd({ chapterId, flawless }) {
+    if (flawless) awardStar(chapterId, 'flawless')
+  }
+
+  function handleExtraComplete(chapterId) {
+    awardStar(chapterId, 'extra')
+  }
+
+  const stars = progress.stars || {}
+
+  const showTopBar = view !== 'home'
 
   return (
     <div className="app">
-      <TopBar
-        rank={rank} progress={progress} MAX_HP={MAX_HP}
-        onOpenBook={() => setView('book')}
-        onDailyDrill={() => setView('drill')}
-      />
+      {showTopBar && (
+        <TopBar
+          rank={rank} progress={progress} MAX_HP={MAX_HP}
+          muted={muted} toggleMute={toggleMute}
+          onHome={goHome}
+        />
+      )}
 
       {showMusouBanner && <MusouBanner />}
       {showDailyBanner && <DailyGoalBanner />}
 
-      {view === 'map' && (
-        <LessonMap
+      {view === 'home' && (
+        <HomeScreen
           progress={progress} rank={rank}
-          onPick={openChapter}
-          onOpenBook={() => setView('book')}
-          onDailyDrill={() => setView('drill')}
-          onReset={() => { if (confirm('确定清除全部战功记录？此操作不可撤销。')) reset() }}
+          muted={muted} toggleMute={toggleMute}
+          onStart={handleStart}
+          onBook={() => { unlock(); setView('book') }}
         />
       )}
 
-      {view === 'game' && chapter && (
+      {view === 'select' && (
+        <CampaignSelect
+          progress={progress} stars={stars}
+          run={run} pyStatus={status}
+          playBgm={playBgm}
+          onPlay={handlePlay}
+          onBack={goHome}
+          onBook={() => setView('book')}
+          onDrill={() => setView('drill')}
+          onExtraComplete={handleExtraComplete}
+        />
+      )}
+
+      {view === 'mission' && chapter && (
         <GameScreen
           chapter={chapter} pyStatus={status} run={run}
           progress={progress} rank={rank}
           onStepComplete={completeStep}
           onCorrect={awardCorrect}
           onWrong={penalizeWrong}
-          onBack={() => setView('map')}
+          onSessionEnd={handleSessionEnd}
+          onBack={() => setView('select')}
         />
       )}
 
       {view === 'book' && (
         <KnowledgeBook
           getSkillLevel={getSkillLevel}
-          onBack={() => setView(chapter ? 'game' : 'map')}
-          onRunTeach={null}
+          onBack={() => setView(view === 'book' && chapter ? 'mission' : 'select')}
         />
       )}
 
@@ -169,8 +208,9 @@ export default function App() {
         <DailyDrill
           weakTopics={getWeakTopics()}
           run={run} pyStatus={status}
-          onStepDone={(topicId, correct) => correct ? awardCorrect(topicId) : penalizeWrong(topicId)}
-          onBack={() => setView('map')}
+          onStepDone={(topicId, correct) =>
+            correct ? awardCorrect(topicId) : penalizeWrong(topicId)}
+          onBack={() => setView('select')}
         />
       )}
     </div>

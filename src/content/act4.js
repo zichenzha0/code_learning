@@ -3,6 +3,15 @@ export const ACT4 = {
   id: 'ch4', name: '第四幕·长坂坡·单骑救主', emoji: '🔥', color: '#6B1010',
   subtitle: '208年，当阳长坂，万军中护主',
   blurb: '建安十三年，当阳长坂。曹军如潮，赵云怀抱幼主，须臾之间作出无数决断——这就是条件判断。',
+  extraTasks: [{
+    id: 'a4-ex1',
+    title: '青釭剑·match-case',
+    task: 'Python 3.10+ 的现代写法——match-case！\nrank = "甲"\n用 match-case：rank=="甲"→打印"上将"；"乙"→"中将"；其余→"偏将"',
+    starter: 'rank = "甲"\nmatch rank:\n    case "甲":\n        pass  # 改为 print("上将")\n    case "乙":\n        pass\n    case _:\n        pass\n',
+    expect: '上将',
+    hints: ['把 case "甲": 下的 pass 改成 print("上将")', 'match-case 是 Python 3.10 新语法', '_ 是通配符，相当于 else'],
+    reward: '青釭剑法获悉！match-case 是赵云夺剑后解封的现代语法糖。',
+  }],
   missions: [
     { id: 'a4-m1', title: '真假旗帜——布尔类型', emoji: '🏳️' },
     { id: 'a4-m2', title: '放行与止步——if / else', emoji: '🚪' },

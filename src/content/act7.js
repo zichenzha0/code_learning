@@ -3,6 +3,15 @@ export const ACT7 = {
   id: 'ch7', name: '第七幕·入川取益州', emoji: '🏔️', color: '#1A5A3A',
   subtitle: '214年，克定益州，迁翊军将军',
   blurb: '赵云随诸葛亮、张飞入川，克定益州，迁翊军将军。函数是将招式封装成可反复施展的绝技。',
+  extraTasks: [{
+    id: 'a7-ex1',
+    title: '无双招式·lambda排序',
+    task: 'warriors = [("赵云",99),("张飞",95),("马超",93)]\n用一行 sorted + lambda 按武力值降序排列，打印第一名将领名。',
+    starter: 'warriors = [("赵云",99),("张飞",95),("马超",93)]\n# sorted + lambda 排序后打印最强将领名\n',
+    expect: '赵云',
+    hints: ['sorted(warriors, key=lambda x: x[1], reverse=True)', '排序后 [0][0] 取名字', 'print(sorted(warriors, key=lambda x:x[1], reverse=True)[0][0])'],
+    reward: '武力排名揭晓！赵云位列第一——无双将星，实至名归！',
+  }],
   missions: [
     { id: 'a7-m1', title: '绝技成型——def / return', emoji: '⚔️' },
     { id: 'a7-m2', title: '因敌制宜——参数与默认参数', emoji: '🎯' },

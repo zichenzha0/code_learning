@@ -466,20 +466,21 @@ function SessionComplete({ chapter, meritGained, prevRankName, currentRankName, 
 // ─────────────────────────────────────────────
 export default function GameScreen({
   chapter, pyStatus, run, progress, rank,
-  onStepComplete, onCorrect, onWrong, onBack,
+  onStepComplete, onCorrect, onWrong, onBack, onSessionEnd,
 }) {
   const steps = chapter.steps
   const firstIncomplete = steps.findIndex((s) => !progress.completedSteps[s.id])
   const startIdx = firstIncomplete === -1 ? 0 : firstIncomplete
 
-  const [stepIdx, setStepIdx]           = useState(startIdx)
-  const [sessionMerit, setSessionMerit] = useState(0)
-  const [sessionDone, setSessionDone]   = useState(firstIncomplete === -1)
-  const [prevRankName]                  = useState(rank.name)
-  const [combo, setCombo]               = useState(0)
-  const [zanFlash, setZanFlash]         = useState(false)
-  const [shake, setShake]               = useState(false)
-  const [wonStep, setWonStep]           = useState(false)
+  const [stepIdx, setStepIdx]             = useState(startIdx)
+  const [sessionMerit, setSessionMerit]   = useState(0)
+  const [sessionDone, setSessionDone]     = useState(firstIncomplete === -1)
+  const [sessionFlawless, setFlawless]    = useState(true)
+  const [prevRankName]                    = useState(rank.name)
+  const [combo, setCombo]                 = useState(0)
+  const [zanFlash, setZanFlash]           = useState(false)
+  const [shake, setShake]                 = useState(false)
+  const [wonStep, setWonStep]             = useState(false)
 
   const step = steps[Math.min(stepIdx, steps.length - 1)]
 
@@ -488,8 +489,12 @@ export default function GameScreen({
 
   function advanceStep() {
     setWonStep(false)
-    if (stepIdx < steps.length - 1) setStepIdx(i => i + 1)
-    else setSessionDone(true)
+    if (stepIdx < steps.length - 1) {
+      setStepIdx(i => i + 1)
+    } else {
+      onSessionEnd?.({ chapterId: chapter.id, flawless: sessionFlawless, merit: sessionMerit })
+      setSessionDone(true)
+    }
   }
 
   function handleTeachNext() {
@@ -515,7 +520,7 @@ export default function GameScreen({
   }
 
   function handleChallengeFail() {
-    setCombo(0); triggerShake(); onWrong(step.topicId)
+    setCombo(0); triggerShake(); onWrong(step.topicId); setFlawless(false)
   }
 
   function handleBossPass() {
@@ -530,7 +535,7 @@ export default function GameScreen({
   }
 
   function handleBossHit() { triggerZan(); onCorrect(null) }
-  function handleBossDefend() { triggerShake(); onWrong(null) }
+  function handleBossDefend() { triggerShake(); onWrong(null); setFlawless(false) }
 
   function handleQuizCorrect() {
     const s = steps[stepIdx]

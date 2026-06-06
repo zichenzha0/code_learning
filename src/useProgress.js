@@ -22,6 +22,7 @@ const DEFAULT = {
   dailyGoalHitTrigger: 0,  // increments when daily goal is first hit
   skillStrength: {},  // { [topicId]: { strength:0-5, lastPracticed:'YYYY-MM-DD' } }
   crowns: {},
+  stars: {},          // { [chapterId]: { flawless: bool, extra: bool } }
 }
 
 function todayStr() {
@@ -220,6 +221,20 @@ export function useProgress() {
     updateAndSave((prev) => ({ ...prev, hp: Math.min(MAX_HP, prev.hp + 1) }))
   }
 
+  function awardStar(chapterId, star) {
+    // star: 'flawless' | 'extra'
+    updateAndSave((prev) => ({
+      ...prev,
+      stars: {
+        ...prev.stars,
+        [chapterId]: {
+          ...(prev.stars?.[chapterId] || {}),
+          [star]: true,
+        },
+      },
+    }))
+  }
+
   function reset() {
     const fresh = { ...DEFAULT }
     save(fresh)
@@ -249,6 +264,7 @@ export function useProgress() {
     completeStep,
     awardCorrect,
     penalizeWrong,
+    awardStar,
     useFreeze,
     setDailyGoal,
     recoverHp,
