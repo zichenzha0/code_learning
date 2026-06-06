@@ -1,0 +1,76 @@
+// 第十幕·杂学补遗 — 正则 / 格式化进阶 / PEP8
+export const ACT10 = {
+  id: 'ch10', name: '第十幕·杂学补遗', emoji: '📚', color: '#4A4A5E',
+  subtitle: '随北伐见闻，博学广纳',
+  blurb: '北伐途中，赵云博采众长。正则、格式化、PEP8——是进阶兵法，简介即可。',
+  missions: [
+    { id: 'a10-m1', title: '密文搜查——正则 re', emoji: '🔍' },
+    { id: 'a10-m2', title: '文书精排——格式化进阶', emoji: '📐' },
+    { id: 'a10-m3', title: '兵书规范——PEP8 风格', emoji: '📜' },
+  ],
+  steps: [
+    // ── 正则 ──────────────────────────────────────────
+    {
+      id: 'a10-t1', type: 'teach', topicId: 'py-regex', missionId: 'a10-m1',
+      title: '正则表达式 re（简介）',
+      blurb: 're 模块用模式字符串搜索/替换文本，适合复杂文本处理。',
+      syntax: 'import re\nre.search(pattern, string)  # 搜索\nre.findall(pattern, string) # 找所有\nre.sub(pattern, repl, string) # 替换',
+      example: 'import re\ntext = "赵云 219年 汉水 220年 曹操"\nnums = re.findall(r"\\d+", text)\nprint(nums)\nmatch = re.search(r"赵云", text)\nprint(bool(match))',
+      output: "['219', '220']\nTrue",
+      note: 'r"..." 是原始字符串，避免 \\ 被转义；常用元字符：\\d 数字，\\w 字母数字，. 任意，* 零或多。',
+      related: ['py-str-methods'],
+      story: '密信中搜出所有年份——正则一网打尽！',
+    },
+    {
+      id: 'a10-c1', type: 'challenge', topicId: 'py-regex', missionId: 'a10-m1',
+      title: '搜出年份',
+      story: '从军报中找出所有数字！',
+      task: "import re\ntext = '赵云208年长坂219年汉水'\n用 findall(r'\\d+', text) 找出所有数字串并打印。",
+      starter: "import re\ntext = '赵云208年长坂219年汉水'\n# findall 找数字\n",
+      expect: "['208', '219']",
+      hints: ["re.findall(r'\\d+', text)", 'print(re.findall(...))', "结果是 ['208', '219']"],
+      reward: '年份搜出！正则 re 初掌握。',
+    },
+    // ── 格式化进阶 ────────────────────────────────────
+    {
+      id: 'a10-t2', type: 'teach', topicId: 'py-str-format-advanced', missionId: 'a10-m2',
+      title: '字符串格式化进阶',
+      blurb: 'f-string 支持格式规范符，控制宽度、对齐、精度和千位分隔符。',
+      syntax: 'f"{x:.2f}"      # 两位小数\nf"{x:,}"        # 千位分隔\nf"{x:>10}"      # 右对齐宽10\nf"{x:^10}"      # 居中宽10\nf"{x:0>5}"      # 左填零',
+      example: 'merit = 12345.6\nprint(f"{merit:.1f}")\nprint(f"{merit:,.0f}")\nname = "赵云"\nprint(f"{name:>10}")\nprint(f"{42:05d}")',
+      output: '12345.6\n12,346\n        赵云\n00042',
+      note: 'format() 函数格式规范与 f-string 相同：format(merit, ",.0f") 等效。',
+      related: ['py-str-fstring'],
+      story: '战报排版精美——数字对齐，一目了然！',
+    },
+    {
+      id: 'a10-c2', type: 'challenge', topicId: 'py-str-format-advanced', missionId: 'a10-m2',
+      title: '战报排版',
+      story: '战功数字保留两位小数！',
+      task: 'merit = 3141.5\n用 f"{merit:.2f}" 格式化并打印。',
+      starter: 'merit = 3141.5\n# 格式化打印\n',
+      expect: '3141.50',
+      hints: ['print(f"{merit:.2f}")', '.2f 表示两位小数', '结果是 3141.50'],
+      reward: '排版精美！格式化进阶掌握。',
+    },
+    // ── PEP8 ──────────────────────────────────────────
+    {
+      id: 'a10-t3', type: 'teach', topicId: 'py-pep8', missionId: 'a10-m3',
+      title: 'PEP8 代码风格（简介）',
+      blurb: 'PEP8 是 Python 官方代码风格指南，让代码整洁易读。',
+      syntax: '# 好的命名\nmax_troops = 5000      # snake_case\nclass BattleGeneral:   # PascalCase\n\n# 运算符两边加空格\nx = 1 + 2\n# 逗号后加空格\na, b, c = 1, 2, 3\n# 注释：# 后加一个空格',
+      example: '# 符合 PEP8 的示例\nMAX_HP = 5           # 常量全大写\n\ndef calculate_merit(wins, multiplier=2):\n    """计算总战功。"""\n    return wins * multiplier\n\nresult = calculate_merit(100, multiplier=3)\nprint(result)',
+      output: '300',
+      note: '用工具自动格式化：black / autopep8；IDE 通常内置 PEP8 检查。重要原则：可读性第一。',
+      related: ['py-comments'],
+      story: '兵书规范——代码整洁，后人易读，传承百代！',
+    },
+    {
+      id: 'a10-q1', type: 'quiz', missionId: 'a10-m3',
+      question: '根据 PEP8，函数名应该用哪种命名风格？',
+      options: ['camelCase（驼峰）', 'PascalCase（帕斯卡）', 'snake_case（下划线）', 'UPPER_CASE（全大写）'],
+      answer: 2,
+      explain: 'PEP8 规定：函数和变量用 snake_case（如 my_function）；类用 PascalCase（如 MyClass）；常量用 UPPER_CASE（如 MAX_VALUE）。',
+    },
+  ],
+}
